@@ -1,0 +1,75 @@
+
+%%
+clear; clc; close all;
+
+% Define file paths
+segmentedImagePath = '/Users/mac/Desktop/Validation Study/Segmentations/img_8/img_9.tif';
+thresholdedImagePath = '/Users/mac/Dropbox (MIT)/RED LAB/Image analysis/Image Data/Current/First data from Florian/Latest/Threshold/Grayscale/img_9_1.tif';
+cameraImagePath = '/Users/mac/Dropbox (MIT)/RED LAB/Image analysis/Image Data/Current/First data from Florian/Latest/Camera/Grayscale/9/img_9_1.tif';
+
+% Read images
+segmentedImage = imread(segmentedImagePath);
+thresholdedImage = imread(thresholdedImagePath);
+cameraImage = imread(cameraImagePath);
+
+% Convert 32-bit images to 8-bit
+thresholdedImage = uint8(255 * mat2gray(thresholdedImage));
+cameraImage = uint8(255 * mat2gray(cameraImage));
+
+% Create the RGB image for overlay
+redChannel = segmentedImage;
+greenChannel = thresholdedImage;
+blueChannel = cameraImage; % Assign the camera image to the blue channel
+combinedImage = cat(3, redChannel, greenChannel, blueChannel);
+
+fig1 = figure; imshow(combinedImage);
+title('Red: Segmented, Green: Thresholded, Blue: Camera Image');
+
+% Optionally, save the combined image if needed
+% outputFolder = '/path/to/save/folder';
+% outputFilename = fullfile(outputFolder, 'combinedOverlayImage.tif');
+% print(fig1, outputFilename, '-dtiff', '-r300');
+% close all;
+
+%%
+% Save combined image
+outputFolder = '/Users/mac/Desktop/Validation Study/Plots/Differences';
+outputFilename = fullfile(outputFolder, 'combinedImage.tif');
+print(fig1, outputFilename, '-dtiff', '-r300');
+close all
+%%
+% Ensure that the images are binary
+if max(segmentedImage(:)) > 1
+    segmentedImage = imbinarize(segmentedImage);
+end
+
+if max(thresholdedImage(:)) > 1
+    thresholdedImage = imbinarize(thresholdedImage);
+end
+
+% Label the binary images
+segLabels = bwlabel(segmentedImage);
+threshLabels = bwlabel(thresholdedImage);
+
+% Calculate areas
+segProps = regionprops(segLabels, 'Area');
+threshProps = regionprops(threshLabels, 'Area');
+segAreas = [segProps.Area];
+threshAreas = [threshProps.Area];
+
+% Plot Bubble Size Distribution with a linear y-axis
+fig3 = figure;
+histogram(segAreas, 'FaceColor', 'r', 'FaceAlpha', 0.5);
+hold on;
+histogram(threshAreas, 'FaceColor', 'b', 'FaceAlpha', 0.5);
+xlabel('Bubble size');
+ylabel('Count');
+legend('Segmented', 'Thresholded');
+title('Bubble Size Distribution');
+xlim([0, 500]); % Focus on 0-500 region
+
+% Save histogram plot
+outputFolder = '/Users/mac/Desktop/Validation Study/Plots/Differences';
+outputFilename = fullfile(outputFolder, 'bubbleSizeDistribution_Zoomed.tif');
+print(fig3, outputFilename, '-dtiff', '-r300');
+close all;
